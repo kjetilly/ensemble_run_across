@@ -119,3 +119,22 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
                 writer.writeheader()
                 for n, qoi in enumerate(qois[timestep, :]):
                     writer.writerow({"sample": n + 1, qoi_name: qoi})
+
+if __name__ =='__main__':
+    import sys
+    
+    if len(sys.argv) != 3:
+        print(f"Usage:\n\t{sys.executable} {sys.argv[0]} <base path to ensemble> <output_folder>\n\n")
+        print("<base path to ensemble> should contain:")
+        print("\tCoarse_Sleipner_ensemble_0001/output/COARSE_SLEIPNER_ENSEMBLE_0001.EGRID")
+        print("\tCoarse_Sleipner_ensemble_0001/output/COARSE_SLEIPNER_ENSEMBLE_0001.INIT")
+        print("\tCoarse_Sleipner_ensemble_0001/output/COARSE_SLEIPNER_ENSEMBLE_0001.UNRST")
+        print("\t...")
+        print("\tCoarse_Sleipner_ensemble_1024/output/COARSE_SLEIPNER_ENSEMBLE_1024.EGRID")
+        print("\tCoarse_Sleipner_ensemble_1024/output/COARSE_SLEIPNER_ENSEMBLE_1024.INIT")
+        print("\tCoarse_Sleipner_ensemble_1024/output/COARSE_SLEIPNER_ENSEMBLE_1024.UNRST")
+        
+        exit(1)
+    basename = sys.argv[1]
+    output_folder = sys.argv[2]
+    calculate_qois(basename, output_folder)
