@@ -17,9 +17,10 @@ def plot_timeseries(foldername, errorevery=10):
         'mobile_co2': '\\mathrm{Mobile\\;CO_2}', 
         'all_co2': '\\mathrm{All\\;CO_2}', 
         'immobile_co2': '\\mathrm{Immobile\\;CO_2}', 
+        'trapped_co2' : 'trapped'
     }
     latex_names['diff'] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
-    for qoi_name in ['real_mobile_co2', 'mobile_co2', 'all_co2', 'immobile_co2']:
+    for qoi_name in ['real_mobile_co2', 'mobile_co2', 'all_co2', 'immobile_co2', 'trapped_co2']:
         latex_name = latex_names[qoi_name]
         filename_for = os.path.join(foldername, '{qoi_name}/{qoi_name}_{timestep}.csv')
         all_qois = collections.defaultdict(list)
