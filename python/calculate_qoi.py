@@ -24,7 +24,7 @@ def calculate_real_immobile_co2(ecl, cellvolumes, initfile, timestep):
     )
 
 
-def calculate_trapped_co2(ecl, cellvolumes, initfile, timestep):
+def calculate_trapped_co2(ecl, cellvolumes, initfile, summary, timestep):
     # “Trapped CO2” is what we want to analyze, and define it as 
     # the fraction of injected CO2 that is “Capillary trapped or dissolved”. 
     # We can calculate it as follows:
@@ -43,7 +43,9 @@ def calculate_trapped_co2(ecl, cellvolumes, initfile, timestep):
     #
     surface_density = 1.98  # density of CO2 at surface pressure
 
-    mass_in_gas_phase = ecl["FGIPG", timestep] * surface_density
+    # TODO: Find corresponding timestep from summary["TIME"]
+    # Timestep is 365.242500
+    mass_in_gas_phase = summary["FGIPG"][timestep_translated] * surface_density
     real_immobile_co2 = calculate_real_immobile_co2(ecl, cellvolumes, initfile, timestep)
     all_co2 = calculate_all_co2(ecl, cellvolumes, initfile, timestep)
     immobile_fraction = real_immobile_co2 / all_co2
