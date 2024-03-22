@@ -108,9 +108,28 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
                 base_filename.format(ensemble_number=ensemble_number)
             ):
                 continue
-            ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
-            egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
-            summary = ESmry(base_filename_summary.format(ensemble_number=ensemble_number))
+
+            if not os.path.exists(
+                base_filename_grid.format(ensemble_number=ensemble_number)
+            ):
+                continue
+
+            if not os.path.exists(
+                base_filename_summary.format(ensemble_number=ensemble_number)
+            ):
+                continue
+            
+            if not os.path.exists(
+                base_filename_init.format(ensemble_number=ensemble_number)
+            ):
+                continue
+            
+            try:
+                ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
+                egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
+                summary = ESmry(base_filename_summary.format(ensemble_number=ensemble_number))
+            except:
+                continue
             cellvolumes = egrid.cellvolumes()
             initfile = EclFile(
                 base_filename_init.format(ensemble_number=ensemble_number)
