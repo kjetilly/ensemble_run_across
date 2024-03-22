@@ -6,11 +6,11 @@ import csv
 import os
 
 
-def calculate_all_co2(ecl, cellvolumes, initfile, timestep):
+def calculate_all_co2(ecl, cellvolumes, initfile, summary, timestep):
     return np.sum(initfile["PORV"] * ecl["SGAS", timestep])
 
 
-def calculate_real_mobile_co2(ecl, cellvolumes, initfile, timestep):
+def calculate_real_mobile_co2(ecl, cellvolumes, initfile, summary,timestep):
     return np.sum(
         initfile["PORV"]
         * (ecl["SGAS", timestep] - 0.1)
@@ -18,11 +18,17 @@ def calculate_real_mobile_co2(ecl, cellvolumes, initfile, timestep):
     )
 
 
-def calculate_real_immobile_co2(ecl, cellvolumes, initfile, timestep):
-    return calculate_all_co2(ecl, cellvolumes, initfile, timestep) - calculate_real_mobile_co2(
-        ecl, cellvolumes, initfile, timestep
-    )
+def calculate_real_immobile_co2(ecl, cellvolumes, initfile, summary, timestep):
+    all_co2 = calculate_all_co2(ecl, cellvolumes, initfile, summary, timestep)
+    real_mobile_co2 = calculate_real_mobile_co2(ecl, cellvolumes, initfile, summary, timestep)
+    return all_co2 - real_mobile_co2
 
+
+def reportstep2timestep(timestep, times):
+    dt = 365.242500
+    timestep_days = dt * timestep
+    index = np.argmin(abs(timestep_days - times))
+    return index
 
 def calculate_trapped_co2(ecl, cellvolumes, initfile, summary, timestep):
     # “Trapped CO2” is what we want to analyze, and define it as 
@@ -44,14 +50,15 @@ def calculate_trapped_co2(ecl, cellvolumes, initfile, summary, timestep):
     surface_density = 1.98  # density of CO2 at surface pressure
 
     # TODO: Find corresponding timestep from summary["TIME"]
-    # Timestep is 365.242500
+    # dt is 365.242500 days
+    timestep_translated = reportstep2timestep(timestep, summary['TIME'])
     mass_in_gas_phase = summary["FGIPG"][timestep_translated] * surface_density
-    real_immobile_co2 = calculate_real_immobile_co2(ecl, cellvolumes, initfile, timestep)
-    all_co2 = calculate_all_co2(ecl, cellvolumes, initfile, timestep)
+    real_immobile_co2 = calculate_real_immobile_co2(ecl, cellvolumes, initfile, summary, timestep)
+    all_co2 = calculate_all_co2(ecl, cellvolumes, initfile, summary, timestep)
     immobile_fraction = real_immobile_co2 / all_co2
     mass_immobile = immobile_fraction * mass_in_gas_phase
-    total_injected_mass = ecl["FGIT", timestep] * surface_density
-    mass_dissolved = ecl["FGIPL", timestep] * surface_density
+    total_injected_mass = summary["FGIT"][timestep_translated] * surface_density
+    mass_dissolved = summary["FGIPL"][timestep_translated] * surface_density
     trapped_co2 = (mass_dissolved + mass_immobile) / total_injected_mass
 
     return trapped_co2
@@ -70,19 +77,24 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
         basepath,
         "Coarse_Sleipner_ensemble_{ensemble_number:04d}/output/COARSE_SLEIPNER_ENSEMBLE_{ensemble_number:04d}.INIT",
     )
+
+    base_filename_summary = os.path.join(
+        basepath,
+        "Coarse_Sleipner_ensemble_{ensemble_number:04d}/output/COARSE_SLEIPNER_ENSEMBLE_{ensemble_number:04d}.SMSPEC",
+    )
     ensemble_numbers = list(range(1, number_of_samples + 1))
     qoi_functions = {
+        "trapped_co2": calculate_trapped_co2,
         "real_immobile_co2": calculate_real_immobile_co2,
         "all_co2": calculate_all_co2,
-        "mobile_co2": lambda ecl, cellvolumes, initfile, timestep: np.sum(
+        "mobile_co2": lambda ecl, cellvolumes, initfile, summary, timestep: np.sum(
             initfile["PORV"] * ecl["SGAS", timestep] * (ecl["SGAS", timestep] > 0.10)
         ),
         "real_mobile_co2": calculate_real_mobile_co2,
-        "immobile_co2": lambda ecl, cellvolumes, initfile, timestep: np.sum(
+        "immobile_co2": lambda ecl, cellvolumes, initfile, summary, timestep: np.sum(
             initfile["PORV"] * ecl["SGAS", timestep] * (ecl["SGAS", timestep] <= 0.10)
         ),
-        "trapped_co2": calculate_trapped_co2,
-        "pressure": lambda ecl, cellvolumes, initfile, timestep: np.sum(
+        "pressure": lambda ecl, cellvolumes, initfile, summary, timestep: np.sum(
             cellvolumes * ecl["PRESSURE", timestep] / np.sum(cellvolumes)
         ),
     }
@@ -98,16 +110,15 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
                 continue
             ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
             egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
+            summary = ESmry(base_filename_summary.format(ensemble_number=ensemble_number))
             cellvolumes = egrid.cellvolumes()
             initfile = EclFile(
                 base_filename_init.format(ensemble_number=ensemble_number)
             )
             for timestep in range(timesteps):
-                try:
-                    qoi = qoi_function(ecloutput, cellvolumes, initfile, timestep)
-                    qois[timestep, ensemble_number - 1] = qoi
-                except:
-                    pass
+                qoi = qoi_function(ecloutput, cellvolumes, initfile, summary, timestep)
+                qois[timestep, ensemble_number - 1] = qoi
+                
         output_dir = os.path.join(output_dir_base, qoi_name)
         os.makedirs(output_dir, exist_ok=True)
 
