@@ -63,6 +63,40 @@ def calculate_trapped_co2(ecl, cellvolumes, initfile, summary, timestep):
 
     return trapped_co2
 
+def calculate_trapped_co2_mass(ecl, cellvolumes, initfile, summary, timestep):
+    # “Trapped CO2” is what we want to analyze, and define it as 
+    # the fraction of injected CO2 that is “Capillary trapped or dissolved”. 
+    # We can calculate it as follows:
+    #
+    #    “Trapped CO2” = (mass dissolved + mass immobile)/total injected mass.
+    #
+    #     Mass dissolved = FGIPL * surface density (1.98 kg/m^3?).
+    #
+    #     Total injected mass = FGIT * surface density.
+    #
+    #     Mass immobile = immobile fraction * mass in gas phase.
+    #
+    #     Immobile fraction = “real immobile co2"/“all_co2”.
+    #
+    #     Mass in gas phase = FGIPG * surface density.
+    #
+    surface_density = 1.98  # density of CO2 at surface pressure
+
+    # TODO: Find corresponding timestep from summary["TIME"]
+    # dt is 365.242500 days
+    timestep_translated = reportstep2timestep(timestep, summary['TIME'])
+    mass_in_gas_phase = summary["FGIPG"][timestep_translated] * surface_density
+    real_immobile_co2 = calculate_real_immobile_co2(ecl, cellvolumes, initfile, summary, timestep)
+    all_co2 = calculate_all_co2(ecl, cellvolumes, initfile, summary, timestep)
+    immobile_fraction = real_immobile_co2 / all_co2
+    mass_immobile = immobile_fraction * mass_in_gas_phase
+    total_injected_mass = summary["FGIT"][timestep_translated] * surface_density
+    mass_dissolved = summary["FGIPL"][timestep_translated] * surface_density
+    trapped_co2_mass = (mass_dissolved + mass_immobile)
+
+    return trapped_co2_mass
+
+
 
 def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timesteps=215):
     base_filename_grid = os.path.join(
@@ -84,6 +118,7 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
     )
     ensemble_numbers = list(range(1, number_of_samples + 1))
     qoi_functions = {
+        "trapped_co2_mass" : calculate_trapped_co2_mass,
         "trapped_co2": calculate_trapped_co2,
         "real_immobile_co2": calculate_real_immobile_co2,
         "all_co2": calculate_all_co2,
@@ -108,28 +143,9 @@ def calculate_qois(basepath, output_dir_base, *, number_of_samples=1024, timeste
                 base_filename.format(ensemble_number=ensemble_number)
             ):
                 continue
-
-            if not os.path.exists(
-                base_filename_grid.format(ensemble_number=ensemble_number)
-            ):
-                continue
-
-            if not os.path.exists(
-                base_filename_summary.format(ensemble_number=ensemble_number)
-            ):
-                continue
-            
-            if not os.path.exists(
-                base_filename_init.format(ensemble_number=ensemble_number)
-            ):
-                continue
-            
-            try:
-                ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
-                egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
-                summary = ESmry(base_filename_summary.format(ensemble_number=ensemble_number))
-            except:
-                continue
+            ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
+            egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
+            summary = ESmry(base_filename_summary.format(ensemble_number=ensemble_number))
             cellvolumes = egrid.cellvolumes()
             initfile = EclFile(
                 base_filename_init.format(ensemble_number=ensemble_number)
