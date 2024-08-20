@@ -60,7 +60,10 @@ def plot_timeseries(foldername, errorevery=10):
             parameters.append([float(row[k]) for k in all_parameter_names])
 
     parameters = np.array(parameters)
+
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
+
+    trapped_sum = None
     for qoi_name in [
         "dissolved_co2_mass",
         "cap_trapped_co2_mass",
@@ -151,6 +154,21 @@ def plot_timeseries(foldername, errorevery=10):
             plt.ylabel(qoi_name)
             plt.savefig(os.path.join(plot_folder, f"scatter_{qoi_name}_{all_parameter_names[i]}.png"), dpi=300)
             plt.close('all')
+
+        if trapped_sum is None:
+            trapped_sum = copy.deepcopy(all_qois[ts_for_corr[-1]])
+            trapped_sum_all = copy.deepcopy(all_qois)
+        elif type(trapped_sum) == type(all_qois[ts_for_corr[-1]]):
+            trapped_sum = np.array(trapped_sum) + np.array(all_qois[ts_for_corr[-1]])
+            for i in range(len(all_parameter_names)):
+                plt.scatter(parameters[:M, i], trapped_sum)
+                plt.xlabel(all_parameter_names[i])
+                plt.ylabel("trapped_co2_sum")
+                plt.savefig(os.path.join(plot_folder, f"scatter_trapped_co2_sum_{all_parameter_names[i]}.png"), dpi=300)
+                plt.close('all')
+            trapped_sum = False
+
+        
 
         for k in ["S1", "ST"]:
             if f"{k}_{all_parameter_names[i]}" in statistics_qoi.keys():

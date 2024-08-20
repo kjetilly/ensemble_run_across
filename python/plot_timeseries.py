@@ -22,15 +22,19 @@ def plot_timeseries(foldername, errorevery=10):
         "trapped_co2": "\\mathrm{Trapped\\;CO_2}",
         "trapped_co2_mass": "\\mathrm{Mass\\;of\\;Trapped\\;CO_2}",
         "pressure": "p",
+        "dissolved_co2_mass" : "\\mathrm{Mass\\;of\\;Dissolved\\;CO_2}",
+        "cap_trapped_co2_mass" : "\\mathrm{Mass\\;of\\;Cap\\;Trapped\\;CO_2}",
     }
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
     for qoi_name in [
+        "dissolved_co2_mass",
+        "cap_trapped_co2_mass",
         # "real_mobile_co2",
         # "mobile_co2",
-        "all_co2",
+        #"all_co2",
         # "immobile_co2",
         "trapped_co2_mass",
-        "trapped_co2",
+        #"trapped_co2",
         # "pressure",
     ]:
         latex_name = latex_names[qoi_name]
@@ -50,18 +54,23 @@ def plot_timeseries(foldername, errorevery=10):
 
         statistics_qoi = collections.defaultdict(list)
         for ts in range(timesteps):
-            statistics_qoi["mean"].append(np.mean(all_qois[ts]))
-            statistics_qoi["std"].append(np.std(all_qois[ts]))
-            statistics_qoi["min"].append(np.min(all_qois[ts]))
-            statistics_qoi["max"].append(np.max(all_qois[ts]))
-
+            try:
+                statistics_qoi["mean"].append(np.mean(all_qois[ts]))
+                statistics_qoi["std"].append(np.std(all_qois[ts]))
+                statistics_qoi["min"].append(np.min(all_qois[ts]))
+                statistics_qoi["max"].append(np.max(all_qois[ts]))
+            except:
+                print(f"{ts=}")
         t = np.arange(0, timesteps)
         plt.errorbar(
             t, statistics_qoi["mean"], yerr=statistics_qoi["std"], errorevery=errorevery
         )
-        plt.fill_between(
-            t, statistics_qoi["min"], statistics_qoi["max"], alpha=0.6, color="salmon"
-        )
+        try:
+            plt.fill_between(
+                t, statistics_qoi["min"], statistics_qoi["max"], alpha=0.6, color="salmon"
+            )
+        except:
+            pass
         plt.ylabel(f"$\\mathbb{{E}}({latex_name})$")
         plt.xlabel("Time [years]")
         plt.tight_layout()
@@ -78,48 +87,50 @@ def plot_timeseries(foldername, errorevery=10):
             os.path.join(plot_folder, f"evolution_rel_std_{qoi_name}.png"), dpi=300
         )
         plt.close("all")
+        try:
+            statistics_qoi = collections.defaultdict(list)
+            for ts in range(timesteps):
+                all_co2 = np.array(qois_dict["all_co2"][ts])
+                mobile = np.array(qois_dict["real_mobile_co2"][ts])
+                all_co2_nonzero = all_co2 != 0.0
+                diff = all_co2[all_co2_nonzero] - mobile[all_co2_nonzero]
+                statistics_qoi["mean"].append(np.mean(diff))
+                statistics_qoi["std"].append(np.std(diff))
+                statistics_qoi["min"].append(np.min(diff))
+                statistics_qoi["max"].append(np.max(diff))
 
-    statistics_qoi = collections.defaultdict(list)
-    for ts in range(timesteps):
-        all_co2 = np.array(qois_dict["all_co2"][ts])
-        mobile = np.array(qois_dict["real_mobile_co2"][ts])
-        all_co2_nonzero = all_co2 != 0.0
-        diff = all_co2[all_co2_nonzero] - mobile[all_co2_nonzero]
-        statistics_qoi["mean"].append(np.mean(diff))
-        statistics_qoi["std"].append(np.std(diff))
-        statistics_qoi["min"].append(np.min(diff))
-        statistics_qoi["max"].append(np.max(diff))
+            t = np.arange(0, timesteps)
+            plt.errorbar(
+                t, statistics_qoi["mean"], yerr=statistics_qoi["std"], errorevery=errorevery
+            )
+            plt.fill_between(
+                t, statistics_qoi["min"], statistics_qoi["max"], alpha=0.6, color="salmon"
+            )
+            plt.ylabel(f'$\\mathbb{{E}}({latex_names["diff"]})$')
+            plt.xlabel("Time [years]")
+            plt.tight_layout()
+            plt.savefig(os.path.join(plot_folder, f"evolution_diff.png"), dpi=300)
+            plt.close("all")
+            plt.plot(t, statistics_qoi["std"])
+            plt.xlabel("Time [years]")
+            plt.ylabel(f'$\\mathrm{{std}}({latex_names["diff"]})$')
+            plt.tight_layout()
 
-    t = np.arange(0, timesteps)
-    plt.errorbar(
-        t, statistics_qoi["mean"], yerr=statistics_qoi["std"], errorevery=errorevery
-    )
-    plt.fill_between(
-        t, statistics_qoi["min"], statistics_qoi["max"], alpha=0.6, color="salmon"
-    )
-    plt.ylabel(f'$\\mathbb{{E}}({latex_names["diff"]})$')
-    plt.xlabel("Time [years]")
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_folder, f"evolution_diff.png"), dpi=300)
-    plt.close("all")
-    plt.plot(t, statistics_qoi["std"])
-    plt.xlabel("Time [years]")
-    plt.ylabel(f'$\\mathrm{{std}}({latex_names["diff"]})$')
-    plt.tight_layout()
+            plt.savefig(os.path.join(plot_folder, f"evolution_std_diff.png"), dpi=300)
+            plt.close()
 
-    plt.savefig(os.path.join(plot_folder, f"evolution_std_diff.png"), dpi=300)
-    plt.close()
-
-    plt.plot(t, np.array(statistics_qoi["std"]) / np.array(statistics_qoi["mean"]))
-    plt.xlabel("Time [years]")
-    plt.ylabel(
-        f'$\\frac{{\\mathrm{{std}}({latex_names["diff"]})}}{{{latex_names["diff"]}}}$'
-    )
-    plt.axvline(15, color="grey", linestyle="--")
-    plt.text(16, 0.05, "Injection ends", color="grey", rotation=90)
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_folder, f"evolution_std_rel.png"), dpi=300)
-    plt.close()
+            plt.plot(t, np.array(statistics_qoi["std"]) / np.array(statistics_qoi["mean"]))
+            plt.xlabel("Time [years]")
+            plt.ylabel(
+                f'$\\frac{{\\mathrm{{std}}({latex_names["diff"]})}}{{{latex_names["diff"]}}}$'
+            )
+            plt.axvline(15, color="grey", linestyle="--")
+            plt.text(16, 0.05, "Injection ends", color="grey", rotation=90)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plot_folder, f"evolution_std_rel.png"), dpi=300)
+            plt.close()
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
