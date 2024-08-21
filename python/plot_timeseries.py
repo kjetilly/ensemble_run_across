@@ -27,14 +27,14 @@ def plot_timeseries(foldername, errorevery=10):
     }
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
     for qoi_name in [
-        "dissolved_co2_mass",
-        "cap_trapped_co2_mass",
+        #"dissolved_co2_mass",
+        #"cap_trapped_co2_mass",
         # "real_mobile_co2",
         # "mobile_co2",
         #"all_co2",
         # "immobile_co2",
         "trapped_co2_mass",
-        #"trapped_co2",
+        "trapped_co2",
         # "pressure",
     ]:
         latex_name = latex_names[qoi_name]

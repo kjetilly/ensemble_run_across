@@ -1,10 +1,12 @@
+import contextlib
+import shutil
 from opm.io.ecl import ESmry, EGrid, EclOutput, EclFile, ERft
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import csv
 import os
-
+import subprocess
 
 def densityco2(P, T):
     k = 1.380649e-23
@@ -201,7 +203,7 @@ def calculate_dissolved_co2(ecl, cellvolumes, initfile, summary, timestep, layer
 
 
 def calculate_qois(
-    basepath, output_dir_base, *, number_of_samples=1024, timesteps=215, layer_mask=None
+    basepath, output_dir_base, *, number_of_samples=2752, timesteps=215, layer_mask=None
 ):
     base_filename_grid = os.path.join(
         basepath,
@@ -252,10 +254,23 @@ def calculate_qois(
         qois = np.zeros((timesteps, len(ensemble_numbers)))
 
         for ensemble_number in ensemble_numbers:
+            should_delete_output = False
+            unrst_name = base_filename.format(ensemble_number=ensemble_number)
             if not os.path.exists(
-                base_filename.format(ensemble_number=ensemble_number)
+                unrst_name
             ):
-                continue
+                sample_folder = os.path.dirname(os.path.dirname(unrst_name))
+                if not os.path.exists(sample_folder):
+                    continue
+                with contextlib.chdir(sample_folder):
+                    if os.path.exists('output.zip'):
+                        try:
+                            subprocess.run(['unzip', 'output.zip'], check=True)
+                            should_delete_output = True
+                        except:
+                            continue
+                    else:
+                        continue
             ecloutput = EclFile(base_filename.format(ensemble_number=ensemble_number))
             egrid = EGrid(base_filename_grid.format(ensemble_number=ensemble_number))
             summary = ESmry(
@@ -273,6 +288,9 @@ def calculate_qois(
                     ecloutput, cellvolumes, initfile, summary, timestep, layer_mask
                 )
                 qois[timestep, ensemble_number - 1] = qoi
+            
+            if should_delete_output:
+                shutil.rmtree(os.path.dirname(unrst_name))
 
         output_dir = os.path.join(output_dir_base, qoi_name)
         os.makedirs(output_dir, exist_ok=True)
