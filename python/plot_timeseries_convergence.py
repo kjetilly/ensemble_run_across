@@ -19,23 +19,23 @@ def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[
         "all_co2": "\\mathrm{All\\;CO_2}",
         "all_co2_mass": "\\mathrm{Mass\\;of\\;All\\;CO_2}",
         "immobile_co2": "\\mathrm{Immobile\\;CO_2}",
-        "trapped_co2": "\\mathrm{Trapped\\;CO_2}",
-        "trapped_co2_mass": "\\mathrm{Mass\\;of\\;Trapped\\;CO_2}",
+        "trapped_co2": "\\mathrm{Secondary\\;Trapped\\;CO_2}",
+        "trapped_co2_mass": "\\mathrm{Mass\\;of\\;Secondary\\;Trapped\\;CO_2}",
         "pressure": "p",
         "dissolved_co2_mass" : "\\mathrm{Mass\\;of\\;Dissolved\\;CO_2}",
         "cap_trapped_co2_mass" : "\\mathrm{Mass\\;of\\;Cap\\;Trapped\\;CO_2}",
     }
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
     for qoi_name in [
-        #"dissolved_co2_mass",
-        #"cap_trapped_co2_mass",
-        # "real_mobile_co2",
-        # "mobile_co2",
-        #"all_co2",
-        # "immobile_co2",
-        #"trapped_co2_mass",
+        "dissolved_co2_mass",
+        "cap_trapped_co2_mass",
+        "real_mobile_co2",
+        "mobile_co2",
+        "all_co2",
+        "immobile_co2",
+        "trapped_co2_mass",
         "trapped_co2",
-        # "pressure",
+        "pressure",
     ]:
         latex_name = latex_names[qoi_name]
         filename_for = os.path.join(foldername, "{qoi_name}/{qoi_name}_{timestep}.csv")
@@ -81,7 +81,7 @@ def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[
                 plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                 plt.xlabel("Number of samples ($M$)")
                 plt.ylabel("Cauchy difference ($|q^M-q^{M/2}|$)")
-                plt.title(f"Cauchy convergence of {k}({qoi_name})")
+                plt.title(f"Cauchy convergence of {k}({latex_names[qoi_name]})")
             plt.xscale("log", base=2)
             plt.yscale("log", base=2)
             plt.legend()
@@ -99,7 +99,7 @@ def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[
                 plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                 plt.xlabel("Number of samples ($M$)")
                 plt.ylabel(f"Difference ($|q^M-q^{{{sample_numbers[-1]}}}|$)")
-                plt.title(f"Convergence against reference solution ({sample_numbers[-1]} samples)\nfor  {k}({qoi_name})")
+                plt.title(f"Convergence against reference solution ({sample_numbers[-1]} samples)\nfor  {k}({latex_names[qoi_name]})")
             plt.xscale("log", base=2)
             plt.yscale("log", base=2)
             plt.legend()

@@ -1,7 +1,10 @@
 import csv
 import collections
 import matplotlib.pyplot as plt
+plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
 import numpy as np
+import scipy.linalg
 from tqdm import tqdm
 import os
 import scipy.stats
@@ -62,17 +65,28 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
     parameters = np.array(parameters)
 
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
-
+    latex_names = {
+        "real_mobile_co2": "\\mathrm{Real\\;Mobile\\;CO_2}",
+        "mobile_co2": "\\mathrm{Mobile\\;CO_2}",
+        "all_co2": "\\mathrm{All\\;CO_2}",
+        "all_co2_mass": "\\mathrm{Mass\\;of\\;All\\;CO_2}",
+        "immobile_co2": "\\mathrm{Immobile\\;CO_2}",
+        "trapped_co2": "\\mathrm{Secondary\\;Trapped\\;CO_2}",
+        "trapped_co2_mass": "\\mathrm{Mass\\;of\\;Secondary\\;Trapped\\;CO_2}",
+        "pressure": "p",
+        "dissolved_co2_mass" : "\\mathrm{Mass\\;of\\;Dissolved\\;CO_2}",
+        "cap_trapped_co2_mass" : "\\mathrm{Mass\\;of\\;Cap\\;Trapped\\;CO_2}",
+    }
     trapped_sum = None
     for qoi_name in [
-        #"dissolved_co2_mass",
-        #"cap_trapped_co2_mass",
-        #"real_mobile_co2",
-        #"mobile_co2",
-        #"all_co2",
-        # "immobile_co2",
+        "dissolved_co2_mass",
+        "cap_trapped_co2_mass",
+        "real_mobile_co2",
+        "mobile_co2",
+        "all_co2",
+        "immobile_co2",
         "trapped_co2",
-        #"pressure",
+        "pressure",
     ]:
         latex_name = latex_names[qoi_name]
         filename_for = os.path.join(foldername, "{qoi_name}/{qoi_name}_{timestep}.csv")
@@ -123,20 +137,18 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
         markers = ['-o', '-*']
 
         for k in ["S1", "ST"]:
-            for i in range(len(all_parameter_names)):
+            for i, parameter_name in enumerate(all_parameter_names):
                 for marker, ts in zip(markers, timestep_numbers):
 
                     v = np.array(statistics_qoi[f"{k}_{all_parameter_names[i]}"][ts])
-                    print(v)
                     errors = abs(v[1:] - v[:-1])
                     samples = sample_numbers[1:]
-                    print(samples)
                     plt.loglog(samples, errors, marker, label=f'$t={ts}$ years')
                     poly = np.polyfit(np.log(samples), np.log(errors), 1)
                     plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                     plt.xlabel("Number of samples ($M$)")
                     plt.ylabel("Cauchy difference ($|q^M-q^{M/2}|$)")
-                    plt.title(f"Cauchy convergence of {k}({qoi_name})")
+                    plt.title(f"Cauchy convergence of {k}({qoi_name}) against {parameter_name}")
                 plt.xscale("log", base=2)
                 plt.yscale("log", base=2)
                 plt.legend()
@@ -145,27 +157,59 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
                 plt.close('all')
         
         for k in ["S1", "ST"]:
-            for i in range(len(all_parameter_names)):
+            for i, parameter_name in enumerate(all_parameter_names):
                 for marker, ts in zip(markers, timestep_numbers):
 
                     v = np.array(statistics_qoi[f"{k}_{all_parameter_names[i]}"][ts])
-                    print(v)
                     errors = abs(v[:-1] - v[-1])
                     samples = sample_numbers[:-1]
-                    print(samples)
                     plt.loglog(samples, errors, marker, label=f'$t={ts}$ years')
                     poly = np.polyfit(np.log(samples), np.log(errors), 1)
                     plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                     plt.xlabel("Number of samples ($M$)")
                     plt.ylabel(f"Difference ($|q^M-q^{{{sample_numbers[-1]}}}|$)")
-                plt.title(f"Convergence against reference solution ({sample_numbers[-1]} samples)\nfor  {k}({qoi_name})")
+                plt.title(f"Convergence {k}({qoi_name}) against {parameter_name}\nagainst reference solution ({sample_numbers[-1]} samples)\nfor  {k}({qoi_name})")
                 plt.xscale("log", base=2)
                 plt.yscale("log", base=2)
                 plt.legend()
                 plt.grid(True)
                 plt.savefig(os.path.join(plot_folder, f"convergence_sobol_{k}_{qoi_name}_{all_parameter_names[i]}.png"), dpi=300)
                 plt.close('all')
-            
+        
+        for k in ["S1", "ST"]:
+            errors_for_all_variables = collections.defaultdict(lambda: np.zeros(len(all_parameter_names), len(sample_numbers)-1))
+            for i, parameter_name in enumerate(all_parameter_names):
+                
+                for marker, ts in zip(markers, timestep_numbers):
+
+                    v = np.array(statistics_qoi[f"{k}_{all_parameter_names[i]}"][ts])
+                    errors = abs(v[:-1] - v[-1])
+                    errors_for_all_variables[ts][i,:] = errors
+                    samples = sample_numbers[:-1]
+            norms = {
+                "\\ell^\\infty" : (lambda x : scipy.linalg.norm(x, ord=np.inf)),
+                "\\ell^2" : (lambda x : scipy.linalg.norm(x, ord=2)),
+                "\\ell^1" : (lambda x : scipy.linalg.norm(x, ord=1)),
+                
+            }
+            qoi_full_name = latex_names[qoi_name]
+            for norm_name, norm_func in norms.items():
+                norm_name_alphanum = filter(str.isalnum, norm_name)
+                for marker, ts in zip(markers, timestep_numbers):
+                    samples = sample_numbers[:-1]
+                    errors = norm_func(errors_for_all_variables[ts])
+                    plt.loglog(samples, errors, marker, label=f'$t={ts}$ years')
+                    poly = np.polyfit(np.log(samples), np.log(errors), 1)
+                    plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
+                    plt.xlabel("Number of samples ($M$)")
+                    plt.ylabel(f"Difference ($\\|q^M-q^{{{sample_numbers[-1]}}}\\|_{{{norm_name}}}$)")
+                plt.title(f"Convergence of {k} for {qoi_full_name} in ${norm_name} over all parameters\nagainst reference solution ({sample_numbers[-1]} samples)\nfor  {k}({qoi_name})")
+                plt.xscale("log", base=2)
+                plt.yscale("log", base=2)
+                plt.legend()
+                plt.grid(True)
+                plt.savefig(os.path.join(plot_folder, f"convergence_sobol_normed_{k}_{qoi_name}_{norm_name_alphanum}.png"), dpi=300)
+                plt.close('all')
 
 if __name__ == "__main__":
     import sys
