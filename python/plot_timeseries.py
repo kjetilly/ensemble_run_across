@@ -5,7 +5,12 @@ import numpy as np
 from tqdm import tqdm
 import os
 
-
+plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif"
+})
 def plot_timeseries(foldername, errorevery=10):
     plot_folder = os.path.join(foldername, "img")
     os.makedirs(plot_folder, exist_ok=True)

@@ -5,6 +5,13 @@ import numpy as np
 from tqdm import tqdm
 import os
 
+plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif"
+})
+
 
 def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[0.125/8, 0.125/4, 0.125/2, 0.125, 0.5, 1.0]):
     plot_folder = os.path.join(foldername, "img")

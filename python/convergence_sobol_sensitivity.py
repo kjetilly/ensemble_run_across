@@ -3,6 +3,10 @@ import collections
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif"
+})
 import numpy as np
 import scipy.linalg
 from tqdm import tqdm
@@ -177,7 +181,7 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
                 plt.close('all')
         
         for k in ["S1", "ST"]:
-            errors_for_all_variables = collections.defaultdict(lambda: np.zeros(len(all_parameter_names), len(sample_numbers)-1))
+            errors_for_all_variables = collections.defaultdict(lambda: np.zeros((len(all_parameter_names), len(sample_numbers)-1)))
             for i, parameter_name in enumerate(all_parameter_names):
                 
                 for marker, ts in zip(markers, timestep_numbers):
@@ -187,14 +191,14 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
                     errors_for_all_variables[ts][i,:] = errors
                     samples = sample_numbers[:-1]
             norms = {
-                "\\ell^\\infty" : (lambda x : scipy.linalg.norm(x, ord=np.inf)),
-                "\\ell^2" : (lambda x : scipy.linalg.norm(x, ord=2)),
-                "\\ell^1" : (lambda x : scipy.linalg.norm(x, ord=1)),
+                "\\ell^\\infty" : (lambda x : scipy.linalg.norm(x, ord=np.inf, axis=0)),
+                "\\ell^2" : (lambda x : scipy.linalg.norm(x, ord=2, axis=0)),
+                "\\ell^1" : (lambda x : scipy.linalg.norm(x, ord=1, axis=0)),
                 
             }
             qoi_full_name = latex_names[qoi_name]
             for norm_name, norm_func in norms.items():
-                norm_name_alphanum = filter(str.isalnum, norm_name)
+                norm_name_alphanum = ''.join(filter(str.isalnum, norm_name))
                 for marker, ts in zip(markers, timestep_numbers):
                     samples = sample_numbers[:-1]
                     errors = norm_func(errors_for_all_variables[ts])
@@ -203,7 +207,7 @@ def plot_timeseries(foldername, errorevery=10,timestep_numbers=[214//2, 214], sa
                     plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                     plt.xlabel("Number of samples ($M$)")
                     plt.ylabel(f"Difference ($\\|q^M-q^{{{sample_numbers[-1]}}}\\|_{{{norm_name}}}$)")
-                plt.title(f"Convergence of {k} for {qoi_full_name} in ${norm_name} over all parameters\nagainst reference solution ({sample_numbers[-1]} samples)\nfor  {k}({qoi_name})")
+                plt.title(f"Convergence of {k} for ${qoi_full_name}$ in ${norm_name}$ over all parameters\nagainst reference solution ({sample_numbers[-1]} samples)")
                 plt.xscale("log", base=2)
                 plt.yscale("log", base=2)
                 plt.legend()
