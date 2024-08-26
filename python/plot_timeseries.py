@@ -1,16 +1,17 @@
 import csv
 import collections
 import matplotlib.pyplot as plt
-import numpy as np
-from tqdm import tqdm
-import os
 
 plt.rc('text', usetex=True)
-plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+plt.rc('text.latex', preamble=r'\usepackage{amsmath,amsfonts,amssymb}')
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif"
 })
+import numpy as np
+from tqdm import tqdm
+import os
+
 def plot_timeseries(foldername, errorevery=10):
     plot_folder = os.path.join(foldername, "img")
     os.makedirs(plot_folder, exist_ok=True)
@@ -32,15 +33,15 @@ def plot_timeseries(foldername, errorevery=10):
     }
     latex_names["diff"] = f"{latex_names['all_co2']}-{latex_names['real_mobile_co2']}"
     for qoi_name in [
-        #"dissolved_co2_mass",
-        #"cap_trapped_co2_mass",
-        # "real_mobile_co2",
-        # "mobile_co2",
-        #"all_co2",
-        # "immobile_co2",
+        "dissolved_co2_mass",
+        "cap_trapped_co2_mass",
+        "real_mobile_co2",
+        "mobile_co2",
+        "all_co2",
+        "immobile_co2",
         "trapped_co2_mass",
         "trapped_co2",
-        # "pressure",
+        "pressure",
     ]:
         latex_name = latex_names[qoi_name]
         filename_for = os.path.join(foldername, "{qoi_name}/{qoi_name}_{timestep}.csv")

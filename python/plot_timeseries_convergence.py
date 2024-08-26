@@ -1,16 +1,16 @@
 import csv
 import collections
 import matplotlib.pyplot as plt
-import numpy as np
-from tqdm import tqdm
-import os
-
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif"
 })
+import numpy as np
+from tqdm import tqdm
+import os
+
 
 
 def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[0.125/8, 0.125/4, 0.125/2, 0.125, 0.5, 1.0]):
@@ -88,7 +88,7 @@ def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[
                 plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                 plt.xlabel("Number of samples ($M$)")
                 plt.ylabel("Cauchy difference ($|q^M-q^{M/2}|$)")
-                plt.title(f"Cauchy convergence of {k}({latex_names[qoi_name]})")
+                plt.title(f"Cauchy convergence of {k}$({latex_names[qoi_name]})$")
             plt.xscale("log", base=2)
             plt.yscale("log", base=2)
             plt.legend()
@@ -106,7 +106,7 @@ def plot_timeseries(foldername, timestep_numbers=[214//2, 214], sample_factors=[
                 plt.loglog(samples, np.exp(poly[1])*samples**poly[0], '--', label=f'$\\mathcal{{O}}(M^{{{poly[0]:0.1f}}})$')
                 plt.xlabel("Number of samples ($M$)")
                 plt.ylabel(f"Difference ($|q^M-q^{{{sample_numbers[-1]}}}|$)")
-                plt.title(f"Convergence against reference solution ({sample_numbers[-1]} samples)\nfor  {k}({latex_names[qoi_name]})")
+                plt.title(f"Convergence against reference solution ({sample_numbers[-1]} samples)\nfor  {k}$({latex_names[qoi_name]})$")
             plt.xscale("log", base=2)
             plt.yscale("log", base=2)
             plt.legend()
