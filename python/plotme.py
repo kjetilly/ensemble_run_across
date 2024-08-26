@@ -1,6 +1,13 @@
 import csv
 import collections
 import matplotlib.pyplot as plt
+
+plt.rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath,amsfonts,amssymb}')
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif"
+})
 import numpy as np
 from tqdm import tqdm
 import os
@@ -33,7 +40,7 @@ def plot_timeseries(foldername, errorevery=10):
         "mobile_co2": "\\mathrm{Mobile\\;CO_2}",
         "all_co2": "\\mathrm{All\\;CO_2}",
         "immobile_co2": "\\mathrm{Immobile\\;CO_2}",
-        "trapped_co2": "\\mathrm{Trapped\\;CO_2}",
+        "trapped_co2": "\\mathrm{Trapped\\;Secondary\\;CO_2}",
         "pressure": "p",
         "dissolved_co2_mass": "\\mathrm{Mass\\;of\\;Dissolved\\;CO_2}",
         "cap_trapped_co2_mass": "\\mathrm{Mass\\;of\\;Cap\\;Trapped\\;CO_2}",
@@ -65,13 +72,13 @@ def plot_timeseries(foldername, errorevery=10):
 
     trapped_sum = None
     for qoi_name in [
+        "trapped_co2",
         "dissolved_co2_mass",
         "cap_trapped_co2_mass",
         "real_mobile_co2",
         "mobile_co2",
         "all_co2",
         "immobile_co2",
-        "trapped_co2",
         "pressure",
     ]:
         latex_name = latex_names[qoi_name]
@@ -96,7 +103,7 @@ def plot_timeseries(foldername, errorevery=10):
             # statistics_qoi['std'].append(np.std(all_qois[ts]))
             # statistics_qoi['min'].append(np.min(all_qois[ts]))
             # statistics_qoi['max'].append(np.max(all_qois[ts]))
-            if np.prod(all_qois[ts]) < 2:
+            if len(all_qois[ts]) < 2:
                 continue
             ts_for_corr.append(ts)
             for i in range(len(all_parameter_names)):
@@ -129,24 +136,26 @@ def plot_timeseries(foldername, errorevery=10):
         plt.ylabel(f"Correlation")
         plt.xlabel("Time [years]")
         plt.title(f"Correlation for ${latex_names[qoi_name]}$")
-        plt.text(
-            50,
-            0,
-            "DRAFT!",
-            fontsize=100,
-            color="grey",
-            rotation=45,
-            ha="center",
-            va="center",
-            alpha=0.5,
-        )
+        # plt.text(
+        #     50,
+        #     0,
+        #     "DRAFT!",
+        #     fontsize=100,
+        #     color="grey",
+        #     rotation=45,
+        #     ha="center",
+        #     va="center",
+        #     alpha=0.5,
+        # )
         plt.legend()
         plt.tight_layout()
+
 
         plt.savefig(os.path.join(plot_folder, f"correlation_{qoi_name}.png"), dpi=300)
         plt.close("all")
 
-
+        if len(ts_for_corr) == 0:
+            continue
         for i in range(len(all_parameter_names)):
             #print(f"{parameters[:M, i].shape=}\n{all_qois[ts_for_corr[-1]]=}\n{all_qois=}")
             plt.scatter(parameters[:M, i], all_qois[ts_for_corr[-1]])
@@ -190,17 +199,17 @@ def plot_timeseries(foldername, errorevery=10):
                 plt.ylabel(f"Sobol {k}")
                 plt.xlabel("Time [years]")
                 plt.title(f"Sobol {k} ${latex_names[qoi_name]}$")
-                plt.text(
-                    100,
-                    0,
-                    "DRAFT!",
-                    fontsize=80,
-                    color="grey",
-                    rotation=30,
-                    ha="center",
-                    va="center",
-                    alpha=0.5,
-                )
+                # plt.text(
+                #     100,
+                #     0,
+                #     "DRAFT!",
+                #     fontsize=80,
+                #     color="grey",
+                #     rotation=30,
+                #     ha="center",
+                #     va="center",
+                #     alpha=0.5,
+                # )
                 plt.legend()
                 plt.tight_layout()
 
